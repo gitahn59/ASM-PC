@@ -15,5 +15,10 @@ namespace ASM_PC
         {
             InitializeComponent();
         }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            Connector ct = new Connector();
+        }
     }
 }
