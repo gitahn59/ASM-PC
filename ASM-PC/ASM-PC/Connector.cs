@@ -6,8 +6,11 @@ using System.Drawing;
 
 namespace ASM_PC
 {
+    delegate void ImageArrivedEventHandler();
+
     class Connector
     {
+        public event ImageArrivedEventHandler imageArrived;
 
         public int Port { get; }
         public string Ip { get; }
@@ -27,8 +30,6 @@ namespace ASM_PC
 
         public Connector()
         {
-            string s = "marst branch test";
-
             this.Port = 9876;
             this.Ip = GetIPAddress();
 
@@ -46,6 +47,9 @@ namespace ASM_PC
         public void GetImage()
         {
             byte[] bytes = new byte[4];
+            bytes = new byte[4];
+            stream.Write(bytes, 0, 4);
+
             stream.Read(bytes, 0, 4);
             
             int length = ByteToInt(bytes);
@@ -60,11 +64,9 @@ namespace ASM_PC
                 length -= read;
                 ms.Write(bytes, 0, read);
             }
-            bytes = new byte[4];
-            stream.Write(bytes, 0, 4);
 
             this.i = Image.FromStream(ms);
-
+            imageArrived();
         }
 
         public int ByteToInt(byte[] bytes)

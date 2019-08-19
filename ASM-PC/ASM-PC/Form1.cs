@@ -20,7 +20,8 @@ namespace ASM_PC
 
         private void button1_Click(object sender, EventArgs e)
         {
-           ct = new Connector();
+            ct = new Connector();
+            ct.imageArrived += ImageArrived; //link event handler 
         }
 
         private void button2_Click(object sender, EventArgs e)
@@ -28,8 +29,15 @@ namespace ASM_PC
             if (ct != null)
             {
                 ct.GetImage();
-                pictureBox1.Image = ct.i;
             }
+        }
+
+        /// <summary>
+        /// Arriving image event handler 
+        /// </summary>
+        private void ImageArrived()
+        {
+            pictureBox1.Image = ct.i;
         }
     }
 }
