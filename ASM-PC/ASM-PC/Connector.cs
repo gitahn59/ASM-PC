@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Net;
 using System.Net.Sockets;
-
+using System.IO;
+using System.Drawing;
 
 namespace ASM_PC
 {
@@ -10,11 +11,15 @@ namespace ASM_PC
 
         public int Port { get; }
         public string Ip { get; }
+        private IPEndPoint localAddress;
 
         public UdpClient UdpServer { get; }
 
         public NetworkStream Stream { get; }
         public bool isCreated { get; }
+
+        public MemoryStream ms;
+        public Image i;
 
         public Connector()
         {
@@ -23,24 +28,52 @@ namespace ASM_PC
             this.Port = 9876;
             this.Ip = GetIPAddress();
 
+            this.localAddress = new IPEndPoint(IPAddress.Any,this.Port);
             UdpServer = new UdpClient(this.Port);
 
-            IPEndPoint localAddress = new IPEndPoint(IPAddress.Any, 9876);
+            //this.UdpServer.Close();
+            ms = new MemoryStream();
+        }
+
+        public void GetImage()
+        {
+            int num = -1;
 
             while (true)
             {
                 // receiving data
-                byte[] dgram = this.UdpServer.Receive(ref localAddress);
-
-                if (dgram.Length != 0)
-                    break;
-
-                //sending data
-                //this.UdpServer.Send(dgram, dgram.Length, localAddress);
+                byte[] dgram = this.UdpServer.Receive(ref this.localAddress);
+                
+                int count = dgram[dgram.Length - 1];
+                if (num == -1)
+                    num = count;
+                else
+                {
+                    if (num != count)
+                    {
+                        try
+                        {
+                            i = Image.FromStream(ms);
+                            break;
+                        }
+                        catch (Exception e)
+                        {
+                            i = null;
+                            break;
+                        }
+                    }else
+                    {
+                        ms.Write(dgram, 0, dgram.Length);
+                    }
+                }
+               
+                
             }
 
-            this.UdpServer.Close();
+            //sending data
+            //this.UdpServer.Send(dgram, dgram.Length, localAddress);
         }
+
 
         public static string GetIPAddress()
         {

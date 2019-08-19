@@ -11,6 +11,8 @@ namespace ASM_PC
 {
     public partial class Form1 : Form
     {
+        Connector ct=null;
+
         public Form1()
         {
             InitializeComponent();
@@ -18,7 +20,16 @@ namespace ASM_PC
 
         private void button1_Click(object sender, EventArgs e)
         {
-            Connector ct = new Connector();
+           ct = new Connector();
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            if (ct != null)
+            {
+                ct.GetImage();
+                pictureBox1.Image = ct.i;
+            }
         }
     }
 }
