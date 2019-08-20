@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.IO;
 using System.Drawing;
+using System.Threading;
 
 namespace ASM_PC
 {
@@ -27,6 +28,7 @@ namespace ASM_PC
         public TcpClient client;
         public NetworkStream stream;
 
+        Thread mirroring;
 
         public Connector()
         {
@@ -42,31 +44,54 @@ namespace ASM_PC
             stream = client.GetStream();
 
             ms = new MemoryStream();
+            mirroring = new Thread(new ThreadStart(GetImage));
+        }
+
+        public void MirroringStart()
+        {
+            mirroring.Start();
+        }
+
+        public void MirroringEnd()
+        {
+            if (mirroring.ThreadState == ThreadState.Running)
+            {
+                mirroring.Interrupt();
+            }
         }
 
         public void GetImage()
         {
-            byte[] bytes = new byte[4];
-            bytes = new byte[4];
-            stream.Write(bytes, 0, 4);
-
-            stream.Read(bytes, 0, 4);
-            
-            int length = ByteToInt(bytes);
-            bytes = new byte[20000];
-
-            MemoryStream ms = new MemoryStream();
-            int read = 0;
-            while (length>0)
+            try
             {
-                //socket read
-                read = stream.Read(bytes, 0, 20000);
-                length -= read;
-                ms.Write(bytes, 0, read);
-            }
+                while (true)
+                {
+                    byte[] bytes = new byte[4];
+                    bytes = new byte[4];
+                    stream.Write(bytes, 0, 4);
 
-            this.i = Image.FromStream(ms);
-            imageArrived();
+                    stream.Read(bytes, 0, 4);
+
+                    int length = ByteToInt(bytes);
+                    bytes = new byte[20000];
+
+                    MemoryStream ms = new MemoryStream();
+                    int read = 0;
+                    while (length > 0)
+                    {
+                        //socket read
+                        read = stream.Read(bytes, 0, 20000);
+                        length -= read;
+                        ms.Write(bytes, 0, read);
+                    }
+
+                    this.i = Image.FromStream(ms);
+                    imageArrived();
+                }
+            }catch(ThreadInterruptedException tie)
+            {
+                mirroring.Abort();
+            }
         }
 
         public int ByteToInt(byte[] bytes)

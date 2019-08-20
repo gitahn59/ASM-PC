@@ -26,10 +26,7 @@ namespace ASM_PC
 
         private void button2_Click(object sender, EventArgs e)
         {
-            if (ct != null)
-            {
-                ct.GetImage();
-            }
+            ct.MirroringStart();
         }
 
         /// <summary>
@@ -37,7 +34,18 @@ namespace ASM_PC
         /// </summary>
         private void ImageArrived()
         {
-            pictureBox1.Image = ct.i;
+            Invoke(new MethodInvoker(delegate () {
+                pictureBox1.Image = ct.i;
+            }));
+        }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            if (ct != null)
+            {
+                ct.MirroringEnd();
+                ct = null;
+            }
         }
     }
 }
