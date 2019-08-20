@@ -34,9 +34,19 @@ namespace ASM_PC
         /// </summary>
         private void ImageArrived()
         {
-            Invoke(new MethodInvoker(delegate () {
-                pictureBox1.Image = ct.i;
-            }));
+            if (ct != null)
+            {
+                Invoke(new MethodInvoker(delegate ()
+                {
+                    try
+                    {
+                        pictureBox1.Image = ct.AndroidScreenImage;
+                    }catch(NullReferenceException nre)
+                    {
+                        
+                    }
+                }));
+            }
         }
 
         private void button3_Click(object sender, EventArgs e)

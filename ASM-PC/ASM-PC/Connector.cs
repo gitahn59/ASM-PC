@@ -11,40 +11,46 @@ namespace ASM_PC
 
     class Connector
     {
+        /// <summary>
+        /// Image arrived event
+        /// </summary>
         public event ImageArrivedEventHandler imageArrived;
 
         public int Port { get; }
         public string Ip { get; }
-        private IPEndPoint localAddress;
 
-        public Socket socket { get; }
+        private bool isConnected;
+        public bool IsConnected { get { return isConnected; } }
 
-        public NetworkStream Stream { get; }
-        public bool isCreated { get; }
+        private Image androidScreenImage;
+        public Image AndroidScreenImage { get { return androidScreenImage; } }
 
-        public MemoryStream ms;
-        public Image i;
-
-        public TcpClient client;
-        public NetworkStream stream;
+        private TcpListener server;
+        private TcpClient client;
+        private NetworkStream stream;
 
         Thread mirroring;
 
         public Connector()
         {
-            this.Port = 9876;
-            this.Ip = GetIPAddress();
+            Port = 9876;
+            try
+            {
+                Ip = GetIPAddress();
+            }catch(Exception e)
+            {
+                isConnected = false;
+            }
 
             IPEndPoint ipep = new IPEndPoint(IPAddress.Parse(this.Ip), this.Port);
 
-            TcpListener server = new TcpListener(ipep);
+            server = new TcpListener(ipep);
             server.Start();
 
             client = server.AcceptTcpClient();
             stream = client.GetStream();
-
-            ms = new MemoryStream();
             mirroring = new Thread(new ThreadStart(GetImage));
+            isConnected = true;
         }
 
         public void MirroringStart()
@@ -57,6 +63,11 @@ namespace ASM_PC
             if (mirroring.ThreadState == ThreadState.Running)
             {
                 mirroring.Interrupt();
+                mirroring.Abort();
+                stream.Close();
+                client.Close();
+                server.Stop();
+                this.isConnected = false;
             }
         }
 
@@ -73,24 +84,28 @@ namespace ASM_PC
                     stream.Read(bytes, 0, 4);
 
                     int length = ByteToInt(bytes);
-                    bytes = new byte[20000];
+                    bytes = new byte[50000];
 
                     MemoryStream ms = new MemoryStream();
                     int read = 0;
                     while (length > 0)
                     {
                         //socket read
-                        read = stream.Read(bytes, 0, 20000);
+                        read = stream.Read(bytes, 0, 50000);
                         length -= read;
                         ms.Write(bytes, 0, read);
                     }
 
-                    this.i = Image.FromStream(ms);
+                    androidScreenImage = Image.FromStream(ms);
                     imageArrived();
                 }
-            }catch(ThreadInterruptedException tie)
+            }
+            catch (IOException ioe)
             {
-                mirroring.Abort();
+                stream.Close();
+                client.Close();
+                server.Stop();
+                          
             }
         }
 
