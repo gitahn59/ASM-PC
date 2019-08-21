@@ -13,6 +13,7 @@ namespace ASM_PC
         /// Image arrived event
         /// </summary>
         public event Action imageArrived;
+        public event Action connected;
         public event Action disconnected;
 
         public int Port { get; }
@@ -28,6 +29,7 @@ namespace ASM_PC
         private TcpClient client;
         private NetworkStream stream;
         private Thread mirroring;
+        private Thread connecting;
 
         public Connector()
         {
@@ -36,18 +38,26 @@ namespace ASM_PC
             if (Ip == null)
             {
                 isConnected = false;
-                return;
+                disconnected();
             }
 
-            IPEndPoint ipep = new IPEndPoint(IPAddress.Parse(this.Ip), this.Port);
-
-            server = new TcpListener(ipep);
-            server.Start();
-
-            client = server.AcceptTcpClient();
-            stream = client.GetStream();
             mirroring = new Thread(new ThreadStart(GetImage));
-            isConnected = true;
+        }
+
+        public void ConnectionStart()
+        {
+            connecting = new Thread(new ThreadStart(
+                delegate ()
+                {
+                    IPEndPoint ipep = new IPEndPoint(IPAddress.Parse(this.Ip), this.Port);
+                    server = new TcpListener(ipep);
+                    server.Start();
+                    client = server.AcceptTcpClient();
+                    stream = client.GetStream();
+                    isConnected = true;
+                    connected();
+                }));
+            connecting.Start();
         }
 
         public void MirroringStart()
@@ -149,6 +159,16 @@ namespace ASM_PC
             }
 
             return null;
+        }
+
+        public void dispose()
+        {
+            if (connecting.ThreadState == ThreadState.Running)
+            {
+                connecting.Interrupt();
+                connecting.Abort();
+                server.Stop();
+            }
         }
     }
 }
