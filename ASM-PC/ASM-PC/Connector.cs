@@ -7,14 +7,13 @@ using System.Threading;
 
 namespace ASM_PC
 {
-    delegate void ImageArrivedEventHandler();
-
     class Connector
     {
         /// <summary>
         /// Image arrived event
         /// </summary>
-        public event ImageArrivedEventHandler imageArrived;
+        public event Action imageArrived;
+        public event Action disconnected;
 
         public int Port { get; }
         public string Ip { get; }
@@ -28,18 +27,16 @@ namespace ASM_PC
         private TcpListener server;
         private TcpClient client;
         private NetworkStream stream;
-
-        Thread mirroring;
+        private Thread mirroring;
 
         public Connector()
         {
             Port = 9876;
-            try
-            {
-                Ip = GetIPAddress();
-            }catch(Exception e)
+            Ip = GetIPAddress();
+            if (Ip == null)
             {
                 isConnected = false;
+                return;
             }
 
             IPEndPoint ipep = new IPEndPoint(IPAddress.Parse(this.Ip), this.Port);
@@ -99,16 +96,29 @@ namespace ASM_PC
                     androidScreenImage = Image.FromStream(ms);
                     imageArrived();
                 }
+            }catch(ArgumentException ae)
+            {
+
             }
             catch (IOException ioe)
+            {
+               
+            }
+            finally
             {
                 stream.Close();
                 client.Close();
                 server.Stop();
-                          
+                isConnected = false;
+                disconnected(); // disconnect event appear 
             }
         }
 
+        /// <summary>
+        /// 4 byte array to int 
+        /// </summary>
+        /// <param name="bytes"></param>
+        /// <returns></returns>
         public int ByteToInt(byte[] bytes)
         {
             int num = 0;
@@ -123,6 +133,10 @@ namespace ASM_PC
             return num;
         }
 
+        /// <summary>
+        /// Get Local Address
+        /// </summary>
+        /// <returns></returns>
         public static string GetIPAddress()
         {
             var host = Dns.GetHostEntry(Dns.GetHostName());
@@ -134,9 +148,7 @@ namespace ASM_PC
                 }
             }
 
-            throw new Exception("No network adapters with an IPv4 address in the system!");
+            return null;
         }
-
-
     }
 }

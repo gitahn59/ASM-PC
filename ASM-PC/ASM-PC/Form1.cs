@@ -20,8 +20,23 @@ namespace ASM_PC
 
         private void button1_Click(object sender, EventArgs e)
         {
-            ct = new Connector();
-            ct.imageArrived += ImageArrived; //link event handler 
+            if (ct == null)
+            {
+                ct = new Connector();
+                ct.imageArrived += ImageArrived; //link event handler
+                ct.disconnected += Disconnected; //link event handler
+            }
+            else
+            {
+                if (!ct.IsConnected)
+                {
+                    ct = null;
+                    ct = new Connector();
+                    ct.imageArrived += ImageArrived; //link event handler 
+                    ct.disconnected += Disconnected; //link event handler
+                    pictureBox1.Image = null;
+                }
+            }
         }
 
         private void button2_Click(object sender, EventArgs e)
@@ -54,8 +69,16 @@ namespace ASM_PC
             if (ct != null)
             {
                 ct.MirroringEnd();
-                ct = null;
             }
+        }
+
+        /// <summary>
+        /// disconnected event handler 
+        /// </summary>
+        private void Disconnected()
+        {
+            pictureBox1.Image = null;
+            ct = null;
         }
     }
 }
